@@ -1,0 +1,104 @@
+import csv
+from bs4 import BeautifulSoup
+from selenium import webdriver
+
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+options = Options()
+options.add_argument("start-maximized")
+
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+
+for i in range(1,50,1):
+    
+    import csv
+    with open(r'C:\Users\Talha Ansari\Downloads\Amazon-Scraping.csv') as file:
+
+        mycsv=csv.reader(file)
+        mycsv=list(mycsv)
+        
+        asin=mycsv[i][0]
+        country=mycsv[i][1]
+        
+        print('Asin : ',asin)
+        print('Country : ',country)
+
+
+
+    def get_url(code,search_term):
+        template='https://www.amazon.{}/dp/{}'
+        search_term=search_term.replace('','')
+        return template.format(code,search_term)
+
+    url=get_url(country,asin)
+
+    print('URL : ',url)
+    driver.get(url)
+    soup = BeautifulSoup(driver.page_source,'html.parser')
+
+    try:
+
+        results=soup.find_all('h1',{'id':'title'})
+        item = results[0]
+        h1tag=item.span.text.strip()#Title of Product
+        print('Product Name : ',h1tag)
+
+    except:
+
+        print('URL Not Available')
+
+    try:
+
+        find_price=soup.find_all('span',{'class':'a-offscreen'})
+        money=find_price[0]
+        pricetag=money.text.strip()#Price of Product
+        print('Price : ',pricetag)
+
+    except:
+        pricetag=''
+
+    try:
+
+        find_rating=soup.find_all('i',{'class':'a-icon a-icon-star a-star-4-5'})
+        rating=find_rating[0]
+        ratingtag=rating.span.text.strip()
+        print('Rating : ',ratingtag) #Rating
+
+    except:
+        ratingtag=''
+
+    try:
+
+        find_review=soup.find_all('a',{'id':'acrCustomerReviewLink'})
+        review=find_review[0]
+        reviewtag=review.span.text.strip()
+        print('Reviews : ',reviewtag)#Review
+
+    except:
+        reviewtag=''
+
+    try:
+        
+        import mysql.connector as A1
+        connection=A1.connect(host='localhost',user='root',password='dayem',database='scrapping')
+        cursor45=connection.cursor()
+        query='INSERT INTO AMAZON (Product_Name,Price,Rating,Reviews) VALUES (%s,%s,%s,%s)'
+        values=(h1tag,pricetag,ratingtag,reviewtag)
+        cursor45.execute(query,values)
+        connection.commit()
+        print('Data Inserted Successfully')
+        alist=[h1tag,pricetag,ratingtag,reviewtag]
+        print(alist)
+        print('')
+        import json
+        data=json.dumps(alist)
+        jsonFile = open("data.json", "w")
+        jsonFile.write(jsonString)
+        jsonFile.close()
+
+    except NameError:
+        print('Data Not Inserted')
+        print('')
